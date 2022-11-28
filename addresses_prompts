@@ -1,0 +1,130 @@
+use zy1_db;
+
+drop table if exists addresses;
+drop table if exists phones;
+drop table if exists person;
+
+create table person (
+    personID int not null primary key,
+    name varchar(30) not null 
+)
+ENGINE = InnoDB;
+
+create table addresses (
+    /* aid int not null, */
+    personID int not null,
+    name varchar(30) not null,
+    kind enum('home','work','cell','other'),
+    city varchar(30) not null, 
+    state char(2),
+
+    INDEX (personID),
+    foreign key (personID) references person(personID)
+        on update restrict 
+        on delete restrict
+)
+ENGINE = InnoDB;
+
+create table phones (
+    personID int not null, 
+    name varchar(30) not null, 
+    kind enum ('home','work','cell','other'),
+    phnum char(10),
+    primary key (phnum),
+
+    INDEX (personID),
+    foreign key (personID) references person(personID)
+        on update restrict
+        on delete restrict 
+)
+ENGINE = InnoDB;
+
+load data local infile 'person-list.csv' into table person fields terminated by ',' ignore 1 lines;
+load data local infile 'address-list.csv' into table addresses fields terminated by ',' ignore 1 lines;
+load data local infile 'phone-list.csv' into table phones fields terminated by ',' ignore 1 lines; 
+
+
+use zy1_db;
+
+/* creates a simple list of each person's name and addresses. 
+This'll be useful for debugging. The output columns should 
+be name, kind of address, city and state. Sort it by name and 
+then by city and state. */ 
+
+select name, kind, city, state 
+from addresses
+order by name, city, state;
+ 
+ 
+ use zy1_db;
+
+/* that creates a simple list of each person's name and phone numbers.
+This'll also be useful for debugging. The output columns 
+should be name, kind of phone, phone number. */ 
+
+
+select name, kind, phnum 
+from phones
+order by name, kind; 
+
+use zy1_db; 
+
+/*  creates a list of each person's name, home address and home phone, 
+if the database has both. Note that the query results shouldn't 
+include the word home, since that would be boring. 
+Output should be name, city, state, and phone number. */ 
+
+
+select A.name, city, state, phnum 
+from addresses A LEFT JOIN phones P using (personID)
+where A.kind = 'home' AND P.kind = 'home' 
+order by A.name, A.city;
+
+
+use zy1_db; 
+
+/*  tells how many phone numbers each person has. Columns are name and count. */ 
+
+
+select name, count(phnum)
+from phones
+group by personID 
+order by name; 
+
+use zy1_db; 
+
+/*  reports the names of anyone living (home address)
+in the states of MA, CT, VT, NH, ME and RI.
+Columns are name and state, sorted by name. */ 
+
+select name, state
+from addresses 
+where kind = 'home' and state in ("MA", "RI", "CT", "VT", "NH", "ME")
+order by name; 
+
+
+use zy1_db; 
+
+/* eports the name and phone number of anyone in 
+the 617 area code (any kind of phone).
+Columns are name and phone number, sorted by name. */ 
+
+select name, phnum 
+from phones
+where phnum like "617%" 
+order by name; 
+
+
+use zy1_db; 
+
+/*  reports the name and addresses of anyone who has both an address 
+in MA and one in CA. Columns are name, MA city (city in Massachusetts), 
+and CA city (city in California). Sort by name. */ 
+
+
+select A1.name, A1.city as "MA city", A2.city as "CA city" 
+from addresses A1, addresses A2
+where A1.personID = A2.personID and A1.state = "MA" and A2.state = "CA" 
+order by A1.name; 
+
+
